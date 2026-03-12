@@ -16,10 +16,17 @@ import org.willowstudio.ru.wStamina.stamina.StaminaService;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class LuckPermsHook implements StaminaPermissionProvider {
+    private static final double EPSILON = 0.0001D;
+
     private final DebugLogger debugLogger;
     private final Lang lang;
+    private final Map<UUID, Double> lastLoggedMultiplier = new ConcurrentHashMap<>();
+    private final Set<String> invalidMultiplierPermissions = ConcurrentHashMap.newKeySet();
     private PluginSettings.LuckPerms settings;
 
     private LuckPerms luckPerms;
@@ -66,6 +73,7 @@ public final class LuckPermsHook implements StaminaPermissionProvider {
         contextCalculator = null;
         playerAdapter = null;
         luckPerms = null;
+        invalidateAll();
     }
 
     public void reloadSettings(PluginSettings.LuckPerms settings, StaminaService staminaService) {
@@ -100,7 +108,7 @@ public final class LuckPermsHook implements StaminaPermissionProvider {
         try {
             CachedPermissionData permissionData = playerAdapter.getPermissionData(player);
             boolean noDrain = permissionData.checkPermission(settings.noDrainPermission()).asBoolean();
-            double multiplier = resolveMultiplier(permissionData.getPermissionMap(), player.getName());
+            double multiplier = resolveMultiplier(permissionData.getPermissionMap(), player.getUniqueId(), player.getName());
             return new StaminaModifier(multiplier, noDrain);
         } catch (Exception exception) {
             debugLogger.log(DebugModule.LUCKPERMS, () ->
@@ -114,7 +122,7 @@ public final class LuckPermsHook implements StaminaPermissionProvider {
         return new StaminaModifier(1.0D, noDrain);
     }
 
-    private double resolveMultiplier(Map<String, Boolean> permissionMap, String playerName) {
+    private double resolveMultiplier(Map<String, Boolean> permissionMap, UUID playerId, String playerName) {
         String prefix = settings.multiplierPermissionPrefix();
         String lowerPrefix = prefix.toLowerCase(Locale.ROOT);
         double selected = 1.0D;
@@ -133,8 +141,11 @@ public final class LuckPermsHook implements StaminaPermissionProvider {
             String rawValue = permission.substring(prefix.length()).trim();
             Double parsed = parseMultiplier(rawValue);
             if (parsed == null) {
-                debugLogger.log(DebugModule.STAMINA, () ->
-                        "Cannot parse multiplier permission '" + permission + "' for " + playerName);
+                String normalizedPermission = permission.toLowerCase(Locale.ROOT);
+                if (invalidMultiplierPermissions.add(normalizedPermission)) {
+                    debugLogger.log(DebugModule.STAMINA, () ->
+                            "Cannot parse multiplier permission '" + permission + "' for " + playerName);
+                }
                 continue;
             }
             if (parsed > selected) {
@@ -143,9 +154,12 @@ public final class LuckPermsHook implements StaminaPermissionProvider {
         }
 
         double clamped = clamp(selected, settings.minMultiplier(), settings.maxMultiplier());
-        double selectedResolved = selected;
-        debugLogger.log(DebugModule.STAMINA, () ->
-                "Resolved multiplier for " + playerName + ": " + selectedResolved + " -> " + clamped);
+        Double previous = lastLoggedMultiplier.put(playerId, clamped);
+        if (previous == null || Math.abs(previous - clamped) > EPSILON) {
+            double selectedResolved = selected;
+            debugLogger.log(DebugModule.STAMINA, () ->
+                    "Resolved multiplier for " + playerName + ": " + selectedResolved + " -> " + clamped);
+        }
         return clamped;
     }
 
@@ -174,5 +188,16 @@ public final class LuckPermsHook implements StaminaPermissionProvider {
 
     private static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    @Override
+    public void invalidatePlayer(UUID playerId) {
+        lastLoggedMultiplier.remove(playerId);
+    }
+
+    @Override
+    public void invalidateAll() {
+        lastLoggedMultiplier.clear();
+        invalidMultiplierPermissions.clear();
     }
 }

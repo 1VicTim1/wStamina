@@ -5,7 +5,8 @@ stamina:
   drain-per-tick: 1.0
   # Points restored each tick when regeneration is active.
   regen-per-tick: 1.0
-  # Delay after sprint stop before regen starts (40 ticks = 2 seconds).
+  # Delay after last sprint activity before regen starts (active sprint or sprint key attempts).
+  # 40 ticks = 2 seconds.
   regen-delay-ticks: 40
   # If false, stamina regenerates only when player is not moving.
   regen-while-walking: true

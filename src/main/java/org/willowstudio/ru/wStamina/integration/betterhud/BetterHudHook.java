@@ -15,6 +15,8 @@ import org.willowstudio.ru.wStamina.stamina.RegionStaminaMode;
 import org.willowstudio.ru.wStamina.stamina.StaminaPlayerSnapshot;
 import org.willowstudio.ru.wStamina.stamina.StaminaService;
 
+import java.util.Locale;
+
 public final class BetterHudHook {
     private final DebugLogger debugLogger;
     private final Lang lang;
@@ -43,7 +45,7 @@ public final class BetterHudHook {
 
         try {
             PlaceholderManager manager = BetterHud.getInstance().getPlaceholderManager();
-            String namespace = settings.betterHudNamespace().toLowerCase();
+            String namespace = settings.betterHudNamespace().toLowerCase(Locale.ROOT);
 
             register(manager.getNumberContainer(), namespace + "_current", directPlaceholder(this::current));
             register(manager.getNumberContainer(), namespace + "_max", directPlaceholder(this::max));

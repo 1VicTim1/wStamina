@@ -10,7 +10,8 @@ Stamina plugin for Paper `1.21.8` with optional integrations:
 
 - Drains stamina while a player is sprinting.
 - Forces sprint off when stamina reaches `0`.
-- Starts a regen delay after sprint ends (`regen-delay-ticks`, default `40` ticks = 2 seconds).
+- Starts a regen delay after sprint activity ends (`regen-delay-ticks`, default `40` ticks = 2 seconds).
+- Repeated sprint attempts with zero stamina keep sprint blocked and keep regen delayed.
 - Regeneration during movement is configurable (`stamina.regen-while-walking`).
 - Base stamina is configurable in `config.yml`; final max stamina is scaled by LuckPerms multiplier.
 

@@ -5,6 +5,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.willowstudio.ru.wStamina.logging.DebugModule;
 
 import java.util.EnumMap;
+import java.util.Locale;
 import java.util.Map;
 
 public final class PluginSettings {
@@ -80,8 +81,8 @@ public final class PluginSettings {
         ConfigurationSection wgFlags = wgSection == null ? null : wgSection.getConfigurationSection("flags");
         WorldGuard worldGuard = new WorldGuard(
                 wgEnabled,
-                getString(wgFlags, "no-drain", "wstamina-no-drain"),
-                getString(wgFlags, "force-zero", "wstamina-force-zero")
+                getString(wgFlags, "no-drain", "wstamina-no-drain").toLowerCase(Locale.ROOT),
+                getString(wgFlags, "force-zero", "wstamina-force-zero").toLowerCase(Locale.ROOT)
         );
 
         ConfigurationSection placeholdersSection = config.getConfigurationSection("placeholders");
@@ -89,9 +90,9 @@ public final class PluginSettings {
         ConfigurationSection betterHudSection = placeholdersSection == null ? null : placeholdersSection.getConfigurationSection("betterhud");
         Placeholders placeholders = new Placeholders(
                 getBoolean(papiSection, "enabled", true),
-                getString(papiSection, "identifier", "wstamina"),
+                getString(papiSection, "identifier", "wstamina").toLowerCase(Locale.ROOT),
                 getBoolean(betterHudSection, "enabled", true),
-                getString(betterHudSection, "namespace", "wstamina")
+                getString(betterHudSection, "namespace", "wstamina").toLowerCase(Locale.ROOT)
         );
 
         EnumMap<DebugModule, Boolean> debugMap = new EnumMap<>(DebugModule.class);

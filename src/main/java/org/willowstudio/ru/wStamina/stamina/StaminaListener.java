@@ -65,14 +65,17 @@ public final class StaminaListener implements Listener {
         if (!event.isSprinting()) {
             return;
         }
-        if (staminaService.enforceSprintLock(event.getPlayer())) {
-            event.setCancelled(true);
+        Player player = event.getPlayer();
+        if (staminaService.enforceSprintLock(player)) {
+            debugLogger.log(DebugModule.STAMINA, () -> "Sprint lock enforced via toggle monitor for " + player.getName());
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        staminaService.enforceSprintLock(player);
+        if (staminaService.enforceSprintLock(player)) {
+            debugLogger.log(DebugModule.STAMINA, () -> "Sprint lock enforced via move check for " + player.getName());
+        }
     }
 }

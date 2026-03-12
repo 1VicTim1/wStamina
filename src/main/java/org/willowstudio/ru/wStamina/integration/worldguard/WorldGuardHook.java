@@ -10,6 +10,7 @@ import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.registry.FlagConflictException;
 import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.willowstudio.ru.wStamina.config.Lang;
@@ -19,10 +20,17 @@ import org.willowstudio.ru.wStamina.logging.DebugModule;
 import org.willowstudio.ru.wStamina.provider.RegionModeProvider;
 import org.willowstudio.ru.wStamina.stamina.RegionStaminaMode;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 public final class WorldGuardHook implements RegionModeProvider {
+    private static final long CACHE_TTL_NANOS = 250_000_000L;
+
     private final DebugLogger debugLogger;
     private final Lang lang;
     private PluginSettings.WorldGuard settings;
+    private final Map<UUID, CachedMode> modeCache = new ConcurrentHashMap<>();
 
     private StateFlag noDrainFlag;
     private StateFlag forceZeroFlag;
@@ -60,6 +68,7 @@ public final class WorldGuardHook implements RegionModeProvider {
 
     public void initialize() {
         hooked = false;
+        modeCache.clear();
         if (!settings.enabled()) {
             return;
         }
@@ -97,12 +106,14 @@ public final class WorldGuardHook implements RegionModeProvider {
     public void shutdown() {
         hooked = false;
         worldGuardPlugin = null;
+        modeCache.clear();
     }
 
     public void reloadSettings(PluginSettings.WorldGuard settings) {
         boolean namesChanged = !this.settings.noDrainFlag().equalsIgnoreCase(settings.noDrainFlag())
                 || !this.settings.forceZeroFlag().equalsIgnoreCase(settings.forceZeroFlag());
         this.settings = settings;
+        modeCache.clear();
         if (namesChanged) {
             lang.warning("messages.hooks.worldguard.flags-changed-restart");
         }
@@ -118,29 +129,67 @@ public final class WorldGuardHook implements RegionModeProvider {
             return RegionStaminaMode.NORMAL;
         }
 
+        Location location = player.getLocation();
+        if (location.getWorld() == null) {
+            return RegionStaminaMode.NORMAL;
+        }
+
+        UUID playerId = player.getUniqueId();
+        UUID worldId = location.getWorld().getUID();
+        int blockX = location.getBlockX();
+        int blockY = location.getBlockY();
+        int blockZ = location.getBlockZ();
+        long now = System.nanoTime();
+
+        CachedMode cached = modeCache.get(playerId);
+        if (cached != null
+                && cached.worldId.equals(worldId)
+                && cached.blockX == blockX
+                && cached.blockY == blockY
+                && cached.blockZ == blockZ
+                && now - cached.timestampNanos <= CACHE_TTL_NANOS) {
+            return cached.mode;
+        }
+
         try {
             LocalPlayer localPlayer = worldGuardPlugin.wrapPlayer(player);
             ApplicableRegionSet regions = WorldGuard.getInstance()
                     .getPlatform()
                     .getRegionContainer()
                     .createQuery()
-                    .getApplicableRegions(BukkitAdapter.adapt(player.getLocation()));
+                    .getApplicableRegions(BukkitAdapter.adapt(location));
 
             StateFlag.State forceZero = regions.queryState(localPlayer, forceZeroFlag);
             if (forceZero == StateFlag.State.ALLOW) {
-                return RegionStaminaMode.FORCE_ZERO;
+                RegionStaminaMode mode = RegionStaminaMode.FORCE_ZERO;
+                modeCache.put(playerId, new CachedMode(worldId, blockX, blockY, blockZ, now, mode));
+                return mode;
             }
 
             StateFlag.State noDrain = regions.queryState(localPlayer, noDrainFlag);
             if (noDrain == StateFlag.State.ALLOW) {
-                return RegionStaminaMode.NO_DRAIN;
+                RegionStaminaMode mode = RegionStaminaMode.NO_DRAIN;
+                modeCache.put(playerId, new CachedMode(worldId, blockX, blockY, blockZ, now, mode));
+                return mode;
             }
         } catch (Exception exception) {
             debugLogger.log(DebugModule.WORLDGUARD, () ->
                     "Failed to resolve region mode for " + player.getName() + ": " + exception.getMessage());
         }
 
-        return RegionStaminaMode.NORMAL;
+        RegionStaminaMode mode = RegionStaminaMode.NORMAL;
+        modeCache.put(playerId, new CachedMode(worldId, blockX, blockY, blockZ, now, mode));
+        return mode;
+    }
+
+    @Override
+    public void invalidatePlayer(UUID playerId) {
+        modeCache.remove(playerId);
+    }
+
+    @Override
+    public void invalidateAll() {
+        modeCache.clear();
     }
 
     private StateFlag registerOrGetStateFlag(FlagRegistry registry, String name) {
@@ -171,5 +220,30 @@ public final class WorldGuardHook implements RegionModeProvider {
             return stateFlag;
         }
         throw new IllegalStateException("Flag '" + name + "' exists and is not a StateFlag.");
+    }
+
+    private static final class CachedMode {
+        private final UUID worldId;
+        private final int blockX;
+        private final int blockY;
+        private final int blockZ;
+        private final long timestampNanos;
+        private final RegionStaminaMode mode;
+
+        private CachedMode(
+                UUID worldId,
+                int blockX,
+                int blockY,
+                int blockZ,
+                long timestampNanos,
+                RegionStaminaMode mode
+        ) {
+            this.worldId = worldId;
+            this.blockX = blockX;
+            this.blockY = blockY;
+            this.blockZ = blockZ;
+            this.timestampNanos = timestampNanos;
+            this.mode = mode;
+        }
     }
 }

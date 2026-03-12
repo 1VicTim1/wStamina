@@ -49,7 +49,6 @@ public final class StaminaService {
 
     public void start() {
         stop();
-        logicalTick = 0L;
         long interval = settings.tickInterval();
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, interval, interval);
         debugLogger.log(DebugModule.CORE, () -> "Stamina task started with interval=" + interval + " ticks.");
@@ -74,13 +73,16 @@ public final class StaminaService {
 
     public void handleQuit(Player player) {
         playerState.remove(player.getUniqueId());
+        worldGuardHook.invalidatePlayer(player.getUniqueId());
+        luckPermsHook.invalidatePlayer(player.getUniqueId());
         debugLogger.log(DebugModule.STAMINA, () -> "Removed state for " + player.getName());
     }
 
     public void handleRespawn(Player player) {
         PlayerStaminaState state = createState(player);
-        state.stamina(state.maxStamina());
+        setStamina(player, state.maxStamina());
         state.wasSprinting(false);
+        state.sprintInputActive(false);
         state.regenBlockedUntilTick(logicalTick);
         debugLogger.log(DebugModule.STAMINA, () -> "Respawn reset stamina for " + player.getName());
     }
@@ -88,7 +90,6 @@ public final class StaminaService {
     public void handleSprintStop(Player player) {
         PlayerStaminaState state = createState(player);
         state.wasSprinting(false);
-        state.sprintInputActive(false);
         state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
         debugLogger.log(DebugModule.STAMINA, () -> "Sprint stop cooldown set for " + player.getName());
     }
@@ -101,12 +102,14 @@ public final class StaminaService {
                 state.stamina(0.0D);
             }
             state.regionMode(mode);
+            state.sprintInputActive(true);
             state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
             updateContextSnapshot(player, state, true);
             return false;
         }
         if (state.stamina() <= EPSILON) {
             state.stamina(0.0D);
+            state.sprintInputActive(true);
             state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
             return false;
         }
@@ -116,13 +119,16 @@ public final class StaminaService {
     public void handleSprintStartDenied(Player player) {
         PlayerStaminaState state = createState(player);
         state.wasSprinting(false);
+        state.sprintInputActive(true);
         state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
     }
 
     public void handleInput(Player player, boolean sprintInputActive) {
         PlayerStaminaState state = createState(player);
         state.sprintInputActive(sprintInputActive);
-        if (!sprintInputActive) {
+        if (sprintInputActive) {
+            state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
+        } else {
             return;
         }
         if (state.stamina() <= EPSILON || state.regionMode() == RegionStaminaMode.FORCE_ZERO) {
@@ -142,7 +148,6 @@ public final class StaminaService {
 
         player.setSprinting(false);
         handleSprintStartDenied(player);
-        debugLogger.log(DebugModule.STAMINA, () -> "Sprint lock enforced for " + player.getName());
         return true;
     }
 
@@ -219,8 +224,14 @@ public final class StaminaService {
         }
 
         boolean sprinting = player.isSprinting();
+        boolean sprintInputActive = player.getCurrentInput().isSprint();
+        state.sprintInputActive(sprintInputActive);
+        if (sprinting || sprintInputActive) {
+            state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
+        }
+
         boolean exhaustedSprintAttempt = false;
-        if ((sprinting || state.sprintInputActive()) && state.stamina() <= EPSILON) {
+        if ((sprinting || sprintInputActive) && state.stamina() <= EPSILON) {
             exhaustedSprintAttempt = true;
             player.setSprinting(false);
             sprinting = false;
@@ -247,6 +258,7 @@ public final class StaminaService {
         }
 
         if (!sprinting
+                && !sprintInputActive
                 && !exhaustedSprintAttempt
                 && logicalTick >= state.regenBlockedUntilTick()
                 && canRegenerateWhileMoving(player)) {

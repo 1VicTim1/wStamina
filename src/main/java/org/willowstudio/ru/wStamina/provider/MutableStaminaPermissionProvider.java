@@ -4,6 +4,7 @@ import org.bukkit.entity.Player;
 import org.willowstudio.ru.wStamina.stamina.StaminaModifier;
 
 import java.util.Objects;
+import java.util.UUID;
 
 public final class MutableStaminaPermissionProvider implements StaminaPermissionProvider {
     private volatile StaminaPermissionProvider delegate = new NoOpStaminaPermissionProvider();
@@ -20,5 +21,15 @@ public final class MutableStaminaPermissionProvider implements StaminaPermission
     @Override
     public void signalContextUpdate(Player player) {
         delegate.signalContextUpdate(player);
+    }
+
+    @Override
+    public void invalidatePlayer(UUID playerId) {
+        delegate.invalidatePlayer(playerId);
+    }
+
+    @Override
+    public void invalidateAll() {
+        delegate.invalidateAll();
     }
 }

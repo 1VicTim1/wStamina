@@ -109,6 +109,8 @@ public final class WStaminaPlugin extends JavaPlugin {
         if (staminaService != null) {
             staminaService.stop();
         }
+        regionModeProvider.invalidateAll();
+        staminaPermissionProvider.invalidateAll();
         if (lang != null) {
             lang.info("messages.plugin.disabled");
         }
@@ -198,6 +200,8 @@ public final class WStaminaPlugin extends JavaPlugin {
         if (luckPermsHook != null) {
             staminaPermissionProvider.setDelegate(luckPermsHook);
         }
+        boolean lpHooked = luckPermsHook != null && luckPermsHook.isHooked();
+        debugLogger.log(DebugModule.HOOKS, () -> "LuckPerms hook active=" + lpHooked);
     }
 
     private void applyPlaceholderHooks() {
@@ -238,6 +242,8 @@ public final class WStaminaPlugin extends JavaPlugin {
         } else {
             betterHudHook.reloadSettings(settings.placeholders(), staminaService);
         }
+        boolean betterHudHooked = betterHudHook != null && betterHudHook.isHooked();
+        debugLogger.log(DebugModule.HOOKS, () -> "BetterHud hook active=" + betterHudHooked);
     }
 
     private boolean isPluginPresent(String pluginName) {

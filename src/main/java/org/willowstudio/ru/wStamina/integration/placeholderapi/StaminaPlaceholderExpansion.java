@@ -13,6 +13,7 @@ import org.willowstudio.ru.wStamina.stamina.StaminaService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Locale;
 
 public final class StaminaPlaceholderExpansion extends PlaceholderExpansion {
     private final WStaminaPlugin plugin;
@@ -29,7 +30,7 @@ public final class StaminaPlaceholderExpansion extends PlaceholderExpansion {
         this.plugin = plugin;
         this.staminaService = staminaService;
         this.debugLogger = debugLogger;
-        this.identifier = identifier.toLowerCase();
+        this.identifier = identifier.toLowerCase(Locale.ROOT);
     }
 
     @Override
@@ -68,7 +69,7 @@ public final class StaminaPlaceholderExpansion extends PlaceholderExpansion {
         }
 
         StaminaPlayerSnapshot snapshot = staminaService.snapshot(player);
-        String key = params.toLowerCase();
+        String key = params.toLowerCase(Locale.ROOT);
         String result = switch (key) {
             case "current" -> format(snapshot.current());
             case "max" -> format(snapshot.max());
