@@ -83,6 +83,7 @@ public final class StaminaService {
         setStamina(player, state.maxStamina());
         state.wasSprinting(false);
         state.sprintInputActive(false);
+        state.sprintLockedUntilRelease(false);
         state.regenBlockedUntilTick(logicalTick);
         debugLogger.log(DebugModule.STAMINA, () -> "Respawn reset stamina for " + player.getName());
     }
@@ -103,6 +104,7 @@ public final class StaminaService {
             }
             state.regionMode(mode);
             state.sprintInputActive(true);
+            setSprintLock(player, state, true, "force-zero region");
             state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
             updateContextSnapshot(player, state, true);
             return false;
@@ -110,7 +112,11 @@ public final class StaminaService {
         if (state.stamina() <= EPSILON) {
             state.stamina(0.0D);
             state.sprintInputActive(true);
+            setSprintLock(player, state, true, "zero stamina");
             state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
+            return false;
+        }
+        if (state.sprintLockedUntilRelease()) {
             return false;
         }
         return state.stamina() > EPSILON;
@@ -120,19 +126,26 @@ public final class StaminaService {
         PlayerStaminaState state = createState(player);
         state.wasSprinting(false);
         state.sprintInputActive(true);
+        setSprintLock(player, state, true, "start denied");
         state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
     }
 
     public void handleInput(Player player, boolean sprintInputActive) {
         PlayerStaminaState state = createState(player);
         state.sprintInputActive(sprintInputActive);
+        if (!sprintInputActive && state.sprintLockedUntilRelease() && state.stamina() > EPSILON) {
+            setSprintLock(player, state, false, "sprint key released");
+        }
         if (sprintInputActive) {
             state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
         } else {
             return;
         }
-        if (state.stamina() <= EPSILON || state.regionMode() == RegionStaminaMode.FORCE_ZERO) {
+        if (state.sprintLockedUntilRelease()
+                || state.stamina() <= EPSILON
+                || state.regionMode() == RegionStaminaMode.FORCE_ZERO) {
             state.stamina(0.0D);
+            setSprintLock(player, state, true, "sprint while exhausted");
             state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
             player.setSprinting(false);
         }
@@ -226,12 +239,18 @@ public final class StaminaService {
         boolean sprinting = player.isSprinting();
         boolean sprintInputActive = player.getCurrentInput().isSprint();
         state.sprintInputActive(sprintInputActive);
+        if (!sprintInputActive && state.sprintLockedUntilRelease() && state.stamina() > EPSILON) {
+            setSprintLock(player, state, false, "tick release check");
+        }
+        if (state.stamina() <= EPSILON) {
+            setSprintLock(player, state, true, "tick exhausted");
+        }
         if (sprinting || sprintInputActive) {
             state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
         }
 
         boolean exhaustedSprintAttempt = false;
-        if ((sprinting || sprintInputActive) && state.stamina() <= EPSILON) {
+        if ((sprinting || sprintInputActive || state.sprintLockedUntilRelease()) && state.stamina() <= EPSILON) {
             exhaustedSprintAttempt = true;
             player.setSprinting(false);
             sprinting = false;
@@ -247,6 +266,7 @@ public final class StaminaService {
             if (state.stamina() <= EPSILON) {
                 exhaustedSprintAttempt = true;
                 state.stamina(0.0D);
+                setSprintLock(player, state, true, "drained to zero");
                 player.setSprinting(false);
                 sprinting = false;
                 debugLogger.log(DebugModule.STAMINA, () -> "Stamina exhausted; sprint stopped for " + player.getName());
@@ -322,5 +342,15 @@ public final class StaminaService {
     private static String formatDecimal(double value) {
         BigDecimal decimal = BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros();
         return decimal.toPlainString();
+    }
+
+    private void setSprintLock(Player player, PlayerStaminaState state, boolean locked, String reason) {
+        boolean previous = state.sprintLockedUntilRelease();
+        if (previous == locked) {
+            return;
+        }
+        state.sprintLockedUntilRelease(locked);
+        debugLogger.log(DebugModule.STAMINA, () ->
+                "Sprint lock " + (locked ? "enabled" : "cleared") + " for " + player.getName() + " (" + reason + ")");
     }
 }
