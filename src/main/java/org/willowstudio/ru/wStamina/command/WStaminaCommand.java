@@ -1,8 +1,8 @@
 package org.willowstudio.ru.wStamina.command;
 
-import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabExecutor;
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.willowstudio.ru.wStamina.WStaminaPlugin;
@@ -14,10 +14,13 @@ import org.willowstudio.ru.wStamina.stamina.StaminaService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
-public final class WStaminaCommand implements TabExecutor {
+public final class WStaminaCommand implements BasicCommand {
+    private static final String ROOT_LABEL = "wstamina";
     private static final String RELOAD_PERMISSION = "wstamina.command.reload";
 
     private final WStaminaPlugin plugin;
@@ -33,12 +36,8 @@ public final class WStaminaCommand implements TabExecutor {
     }
 
     @Override
-    public boolean onCommand(
-            @NotNull CommandSender sender,
-            @NotNull Command command,
-            @NotNull String label,
-            @NotNull String[] args
-    ) {
+    public void execute(@NotNull CommandSourceStack commandSourceStack, @NotNull String[] args) {
+        CommandSender sender = commandSourceStack.getSender();
         if (args.length == 0) {
             if (sender instanceof Player player) {
                 StaminaPlayerSnapshot snapshot = staminaService.snapshot(player);
@@ -47,36 +46,32 @@ public final class WStaminaCommand implements TabExecutor {
                         "max", format(snapshot.max()),
                         "percent", format(snapshot.percent())
                 ));
-                return true;
+                return;
             }
-            lang.send(sender, "messages.command.usage", Map.of("label", label));
-            return true;
+            lang.send(sender, "messages.command.usage", Map.of("label", ROOT_LABEL));
+            return;
         }
 
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
             if (!sender.hasPermission(RELOAD_PERMISSION)) {
                 lang.send(sender, "messages.command.no-permission");
                 debugLogger.log(DebugModule.COMMANDS, () -> "Reload denied for " + sender.getName());
-                return true;
+                return;
             }
             plugin.reloadPlugin();
             lang.send(sender, "messages.command.reloaded");
             debugLogger.log(DebugModule.COMMANDS, () -> "Reload executed by " + sender.getName());
-            return true;
+            return;
         }
 
-        lang.send(sender, "messages.command.usage", Map.of("label", label));
-        return true;
+        lang.send(sender, "messages.command.usage", Map.of("label", ROOT_LABEL));
     }
 
     @Override
-    public @NotNull List<String> onTabComplete(
-            @NotNull CommandSender sender,
-            @NotNull Command command,
-            @NotNull String alias,
-            @NotNull String[] args
-    ) {
-        if (args.length == 1 && "reload".startsWith(args[0].toLowerCase())) {
+    public @NotNull Collection<String> suggest(@NotNull CommandSourceStack commandSourceStack, @NotNull String[] args) {
+        if (args.length == 1
+                && commandSourceStack.getSender().hasPermission(RELOAD_PERMISSION)
+                && "reload".startsWith(args[0].toLowerCase(Locale.ROOT))) {
             return List.of("reload");
         }
         return List.of();

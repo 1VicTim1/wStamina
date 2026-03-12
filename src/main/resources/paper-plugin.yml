@@ -24,11 +24,6 @@ dependencies:
       load: BEFORE
       required: false
       join-classpath: true
-commands:
-  wstamina:
-    description: Main command for wStamina
-    usage: "/wstamina reload"
-    permission: wstamina.command.reload
 permissions:
   wstamina.command.reload:
     description: Allows reloading the plugin configuration

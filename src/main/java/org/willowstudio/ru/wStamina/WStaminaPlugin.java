@@ -1,7 +1,6 @@
 package org.willowstudio.ru.wStamina;
 
 import org.bukkit.Bukkit;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -134,14 +133,8 @@ public final class WStaminaPlugin extends JavaPlugin {
         PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(new StaminaListener(staminaService, debugLogger), this);
 
-        PluginCommand command = getCommand("wstamina");
-        if (command != null) {
-            WStaminaCommand executor = new WStaminaCommand(this, staminaService, debugLogger, lang);
-            command.setExecutor(executor);
-            command.setTabCompleter(executor);
-        } else {
-            lang.warning("messages.plugin.command-missing");
-        }
+        WStaminaCommand executor = new WStaminaCommand(this, staminaService, debugLogger, lang);
+        registerCommand("wstamina", "Main command for wStamina", java.util.List.of(), executor);
     }
 
     private void applyWorldGuardHook() {
