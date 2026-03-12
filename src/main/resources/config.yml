@@ -1,0 +1,69 @@
+stamina:
+  # Base stamina points before LuckPerms multiplier.
+  max-points: 100.0
+  # Points consumed each tick while sprinting.
+  drain-per-tick: 1.0
+  # Points restored each tick when regeneration is active.
+  regen-per-tick: 1.0
+  # Delay after sprint stop before regen starts (40 ticks = 2 seconds).
+  regen-delay-ticks: 40
+  # If false, stamina regenerates only when player is not moving.
+  regen-while-walking: true
+  # Horizontal velocity threshold used to detect movement for regen checks.
+  movement-threshold: 0.02
+  # Scheduler interval for stamina updates.
+  tick-interval: 1
+
+luckperms:
+  enabled: true
+  permissions:
+    # Permission that disables stamina drain.
+    no-drain: "wstamina.nodrain"
+    # Parse values from permissions like: wstamina.multiplier.1.5
+    multiplier-prefix: "wstamina.multiplier."
+  multiplier:
+    min: 0.1
+    max: 10.0
+  contexts:
+    # Contexts provided by this plugin to LuckPerms.
+    state-key: "stamina_state"
+    region-key: "stamina_region"
+    drain-key: "stamina_drain"
+    multiplier-key: "stamina_multiplier"
+
+worldguard:
+  enabled: true
+  flags:
+    # Region with this flag true does not consume stamina.
+    no-drain: "wstamina-no-drain"
+    # Region with this flag true forces stamina to zero.
+    force-zero: "wstamina-force-zero"
+
+placeholders:
+  papi:
+    enabled: true
+    identifier: "wstamina"
+  betterhud:
+    enabled: true
+    # BetterHud placeholder base name.
+    namespace: "wstamina"
+
+debug:
+  # Core plugin lifecycle and runtime reload checkpoints.
+  core: false
+  # Command execution and permission checks.
+  commands: false
+  # Dependency hooks init/shutdown (BetterHud, PAPI, WorldGuard, LuckPerms).
+  hooks: false
+  # Placeholder registration and request handling (BetterHud API + PAPI).
+  placeholders: false
+  # Heat state transitions, damage application and branch decisions.
+  heat: false
+  # Particle spawn/skip decisions.
+  particles: false
+  # Stamina permission parsing and applied multipliers.
+  stamina: false
+  # WorldGuard flags and per-player region mode decisions.
+  worldguard: false
+  # LuckPerms context calculator lifecycle and context updates.
+  luckperms: false

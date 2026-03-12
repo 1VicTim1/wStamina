@@ -1,0 +1,30 @@
+prefix: "&7[&awStamina&7] "
+
+messages:
+  plugin:
+    enabled: "%prefix%&aПлагин включен."
+    disabled: "%prefix%&eПлагин выключен."
+    command-missing: "%prefix%&cКоманда 'wstamina' не найдена в paper-plugin.yml."
+
+  command:
+    usage: "%prefix%&eИспользование: /%label% reload"
+    no-permission: "%prefix%&cУ вас нет прав для этой команды."
+    reloaded: "%prefix%&aКонфигурация и язык перезагружены."
+    stamina-self: "%prefix%&aСтамина: &f%current%&7/&f%max% &7(&f%percent%%&7)"
+
+  hooks:
+    worldguard:
+      preload-failed: "%prefix%&cНе удалось подготовить флаги WorldGuard при onLoad: %reason%"
+      register-flags-failed: "%prefix%&cНе удалось зарегистрировать флаги WorldGuard: %reason%"
+      plugin-type-mismatch: "%prefix%&cНайден WorldGuard, но тип плагина не совпадает."
+      flags-unavailable: "%prefix%&cФлаги WorldGuard недоступны. Интеграция отключена."
+      init-failed: "%prefix%&cНе удалось инициализировать WorldGuard hook: %reason%"
+      flags-changed-restart: "%prefix%&eИмена флагов WorldGuard изменены. Нужен рестарт сервера."
+      create-failed: "%prefix%&cНе удалось создать WorldGuard hook: %reason%"
+      runtime-error: "%prefix%&cОшибка WorldGuard hook: %reason%"
+    luckperms:
+      init-failed: "%prefix%&cНе удалось инициализировать LuckPerms hook: %reason%"
+      create-failed: "%prefix%&cНе удалось создать LuckPerms hook: %reason%"
+    betterhud:
+      init-failed: "%prefix%&cНе удалось инициализировать BetterHud hook: %reason%"
+      create-failed: "%prefix%&cНе удалось создать BetterHud hook: %reason%"

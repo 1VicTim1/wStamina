@@ -1,0 +1,38 @@
+name: wStamina
+version: '${version}'
+main: org.willowstudio.ru.wStamina.WStaminaPlugin
+api-version: '1.21'
+prefix: WST
+authors: [VicTim]
+description: Stamina plugin by WillowStudio
+website: https://willowstudio.ru
+dependencies:
+  server:
+    LuckPerms:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    WorldGuard:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    BetterHud:
+      load: BEFORE
+      required: false
+      join-classpath: true
+commands:
+  wstamina:
+    description: Main command for wStamina
+    usage: "/wstamina reload"
+    permission: wstamina.command.reload
+permissions:
+  wstamina.command.reload:
+    description: Allows reloading the plugin configuration
+    default: op
+  wstamina.nodrain:
+    description: Prevents stamina consumption while sprinting
+    default: false
