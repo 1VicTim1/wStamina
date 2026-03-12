@@ -8,6 +8,7 @@ final class PlayerStaminaState {
     private RegionStaminaMode regionMode;
     private long regenBlockedUntilTick;
     private boolean wasSprinting;
+    private boolean sprintInputActive;
     private volatile StaminaContextSnapshot contextSnapshot;
 
     PlayerStaminaState(double maxStamina) {
@@ -18,6 +19,7 @@ final class PlayerStaminaState {
         this.regionMode = RegionStaminaMode.NORMAL;
         this.regenBlockedUntilTick = 0L;
         this.wasSprinting = false;
+        this.sprintInputActive = false;
         this.contextSnapshot = new StaminaContextSnapshot("normal", RegionStaminaMode.NORMAL.contextValue(), "active", "1.0");
     }
 
@@ -75,6 +77,14 @@ final class PlayerStaminaState {
 
     void wasSprinting(boolean wasSprinting) {
         this.wasSprinting = wasSprinting;
+    }
+
+    boolean sprintInputActive() {
+        return sprintInputActive;
+    }
+
+    void sprintInputActive(boolean sprintInputActive) {
+        this.sprintInputActive = sprintInputActive;
     }
 
     StaminaContextSnapshot contextSnapshot() {

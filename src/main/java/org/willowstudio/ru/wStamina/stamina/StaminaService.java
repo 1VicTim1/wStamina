@@ -88,6 +88,7 @@ public final class StaminaService {
     public void handleSprintStop(Player player) {
         PlayerStaminaState state = createState(player);
         state.wasSprinting(false);
+        state.sprintInputActive(false);
         state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
         debugLogger.log(DebugModule.STAMINA, () -> "Sprint stop cooldown set for " + player.getName());
     }
@@ -116,6 +117,19 @@ public final class StaminaService {
         PlayerStaminaState state = createState(player);
         state.wasSprinting(false);
         state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
+    }
+
+    public void handleInput(Player player, boolean sprintInputActive) {
+        PlayerStaminaState state = createState(player);
+        state.sprintInputActive(sprintInputActive);
+        if (!sprintInputActive) {
+            return;
+        }
+        if (state.stamina() <= EPSILON || state.regionMode() == RegionStaminaMode.FORCE_ZERO) {
+            state.stamina(0.0D);
+            state.regenBlockedUntilTick(logicalTick + settings.regenDelayTicks());
+            player.setSprinting(false);
+        }
     }
 
     public boolean enforceSprintLock(Player player) {
@@ -206,7 +220,7 @@ public final class StaminaService {
 
         boolean sprinting = player.isSprinting();
         boolean exhaustedSprintAttempt = false;
-        if (sprinting && state.stamina() <= EPSILON) {
+        if ((sprinting || state.sprintInputActive()) && state.stamina() <= EPSILON) {
             exhaustedSprintAttempt = true;
             player.setSprinting(false);
             sprinting = false;

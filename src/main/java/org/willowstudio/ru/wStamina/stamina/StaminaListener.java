@@ -4,6 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerInputEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -36,7 +37,12 @@ public final class StaminaListener implements Listener {
         staminaService.handleRespawn(event.getPlayer());
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onInput(PlayerInputEvent event) {
+        staminaService.handleInput(event.getPlayer(), event.getInput().isSprint());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onToggleSprint(PlayerToggleSprintEvent event) {
         Player player = event.getPlayer();
         if (!event.isSprinting()) {
@@ -54,7 +60,17 @@ public final class StaminaListener implements Listener {
         debugLogger.log(DebugModule.STAMINA, () -> "Sprint start denied for " + player.getName());
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onToggleSprintMonitor(PlayerToggleSprintEvent event) {
+        if (!event.isSprinting()) {
+            return;
+        }
+        if (staminaService.enforceSprintLock(event.getPlayer())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         staminaService.enforceSprintLock(player);
