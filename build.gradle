@@ -20,6 +20,10 @@ repositories {
         name = "placeholderapi-repo"
         url = "https://repo.extendedclip.com/content/repositories/placeholderapi/"
     }
+    maven {
+        name = "codemc-repo"
+        url = "https://repo.codemc.io/repository/maven-public/"
+    }
 }
 
 dependencies {
@@ -30,6 +34,7 @@ dependencies {
     compileOnly("io.github.toxicity188:BetterHud-standard-api:${findProperty('betterHudApiVersion')}")
     compileOnly("io.github.toxicity188:BetterCommand:${findProperty('betterCommandVersion')}")
     compileOnly("org.apache.commons:commons-lang3:${findProperty('commonsLang3Version')}")
+    compileOnly("com.github.retrooper:packetevents-spigot:${findProperty('packetEventsVersion')}")
 }
 
 tasks {

@@ -1,15 +1,15 @@
 package org.willowstudio.ru.wStamina.stamina;
 
 final class PlayerStaminaState {
-    private double stamina;
-    private double maxStamina;
-    private double multiplier;
-    private boolean noDrainPermission;
-    private RegionStaminaMode regionMode;
-    private long regenBlockedUntilTick;
-    private boolean wasSprinting;
-    private boolean sprintInputActive;
-    private boolean sprintLockedUntilRelease;
+    private volatile double stamina;
+    private volatile double maxStamina;
+    private volatile double multiplier;
+    private volatile boolean noDrainPermission;
+    private volatile RegionStaminaMode regionMode;
+    private volatile long regenBlockedUntilTick;
+    private volatile boolean wasSprinting;
+    private volatile boolean sprintInputActive;
+    private volatile boolean sprintLockedUntilRelease;
     private volatile StaminaContextSnapshot contextSnapshot;
 
     PlayerStaminaState(double maxStamina) {

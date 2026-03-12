@@ -54,7 +54,7 @@ debug:
   core: false
   # Command execution and permission checks.
   commands: false
-  # Dependency hooks init/shutdown (BetterHud, PAPI, WorldGuard, LuckPerms).
+  # Dependency hooks init/shutdown (BetterHud, PAPI, WorldGuard, LuckPerms, PacketEvents).
   hooks: false
   # Placeholder registration and request handling (BetterHud API + PAPI).
   placeholders: false

@@ -9,6 +9,7 @@ import org.willowstudio.ru.wStamina.config.Lang;
 import org.willowstudio.ru.wStamina.config.PluginSettings;
 import org.willowstudio.ru.wStamina.integration.betterhud.BetterHudHook;
 import org.willowstudio.ru.wStamina.integration.luckperms.LuckPermsHook;
+import org.willowstudio.ru.wStamina.integration.packetevents.PacketEventsSprintBlocker;
 import org.willowstudio.ru.wStamina.integration.placeholderapi.StaminaPlaceholderExpansion;
 import org.willowstudio.ru.wStamina.integration.worldguard.WorldGuardHook;
 import org.willowstudio.ru.wStamina.logging.DebugLogger;
@@ -32,6 +33,7 @@ public final class WStaminaPlugin extends JavaPlugin {
     private WorldGuardHook worldGuardHook;
     private LuckPermsHook luckPermsHook;
     private BetterHudHook betterHudHook;
+    private PacketEventsSprintBlocker packetEventsSprintBlocker;
     private StaminaPlaceholderExpansion placeholderExpansion;
 
     @Override
@@ -79,6 +81,7 @@ public final class WStaminaPlugin extends JavaPlugin {
 
         applyWorldGuardHook();
         applyLuckPermsHook();
+        applyPacketEventsHook();
         applyPlaceholderHooks();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -98,6 +101,10 @@ public final class WStaminaPlugin extends JavaPlugin {
         if (betterHudHook != null) {
             betterHudHook.shutdown();
             betterHudHook = null;
+        }
+        if (packetEventsSprintBlocker != null) {
+            packetEventsSprintBlocker.shutdown();
+            packetEventsSprintBlocker = null;
         }
         if (luckPermsHook != null) {
             luckPermsHook.shutdown();
@@ -128,6 +135,7 @@ public final class WStaminaPlugin extends JavaPlugin {
         }
         applyWorldGuardHook();
         applyLuckPermsHook();
+        applyPacketEventsHook();
         applyPlaceholderHooks();
     }
 
@@ -202,6 +210,39 @@ public final class WStaminaPlugin extends JavaPlugin {
         }
         boolean lpHooked = luckPermsHook != null && luckPermsHook.isHooked();
         debugLogger.log(DebugModule.HOOKS, () -> "LuckPerms hook active=" + lpHooked);
+    }
+
+    private void applyPacketEventsHook() {
+        if (!isPluginPresent("packetevents")) {
+            if (packetEventsSprintBlocker != null) {
+                packetEventsSprintBlocker.shutdown();
+                packetEventsSprintBlocker = null;
+            }
+            debugLogger.log(DebugModule.HOOKS, "PacketEvents hook disabled or plugin missing.");
+            return;
+        }
+
+        if (packetEventsSprintBlocker == null) {
+            try {
+                packetEventsSprintBlocker = new PacketEventsSprintBlocker(staminaService, debugLogger);
+            } catch (Throwable throwable) {
+                getLogger().warning("Failed to create PacketEvents sprint blocker: " + throwable.getMessage());
+                packetEventsSprintBlocker = null;
+                return;
+            }
+        }
+
+        try {
+            packetEventsSprintBlocker.initialize();
+        } catch (Throwable throwable) {
+            getLogger().warning("Failed to initialize PacketEvents sprint blocker: " + throwable.getMessage());
+            packetEventsSprintBlocker.shutdown();
+            packetEventsSprintBlocker = null;
+            return;
+        }
+
+        boolean packetEventsHooked = packetEventsSprintBlocker.isHooked();
+        debugLogger.log(DebugModule.HOOKS, () -> "PacketEvents hook active=" + packetEventsHooked);
     }
 
     private void applyPlaceholderHooks() {

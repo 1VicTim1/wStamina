@@ -24,6 +24,10 @@ dependencies:
       load: BEFORE
       required: false
       join-classpath: true
+    packetevents:
+      load: BEFORE
+      required: false
+      join-classpath: true
 permissions:
   wstamina.command.reload:
     description: Allows reloading the plugin configuration

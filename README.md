@@ -5,6 +5,7 @@ Stamina plugin for Paper `1.21.8` with optional integrations:
 - WorldGuard
 - PlaceholderAPI
 - BetterHud
+- PacketEvents
 
 ## Features
 
@@ -75,6 +76,11 @@ Registered IDs:
 - `wstamina_exhausted`
 
 Use these in BetterHud with its standard placeholder syntax.
+
+### PacketEvents
+
+If `packetevents` is installed, wStamina adds packet-level sprint blocking before Bukkit events.
+This hardens sprint prevention for held `Ctrl` and repeated sprint re-attempts while stamina is exhausted.
 
 ## Configuration files
 
